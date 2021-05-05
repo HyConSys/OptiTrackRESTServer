@@ -32,9 +32,12 @@ void handle_get(http_request request){
 
 int main(){
 
-   http_listener listener(L"http://localhost/OptiTrackRestServer");
-   listener.support(methods::GET,  handle_get);
+   // put some data in the dictionary
+   dictionary[L"DeepRacer1"] = L"(x,y,z,a,b,g)";
 
+   // start the listener
+   http_listener listener(L"http://*:12345/OptiTrackRestServer");
+   listener.support(methods::GET,  handle_get);
    try{
       listener
          .open()
