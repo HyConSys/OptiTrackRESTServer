@@ -30,8 +30,6 @@ NatNetClient natnetClient;
 MarkerPositionCollection markerPositions;
 RigidBodyCollection rigidBodies;
 
-//sNatNetClientConnectParams g_connectParams;
-
 std::map<int, std::string> mapIDToName;
 
 // Ready to render?
@@ -47,10 +45,6 @@ float unitConversion = 1.0f;
 int IPAddress[4] = { 127, 0, 0, 1 };
 
 int g_analogSamplesPerMocapFrame = 0;
-
-//vector< sNatNetDiscoveredServer > g_discoveredServers;
-//sServerDescription g_serverDescription;
-
 
 // NatNet 
 void NATNET_CALLCONV DataHandler(sFrameOfMocapData* data, void* pUserData);    // receives data from the server
@@ -99,7 +93,7 @@ bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
 
     // preserve a "RigidBody ID to Rigid Body Name" mapping, which we can lookup during data streaming
     int iSkel = 0;
-    for (int i = 0, j = 0; i < pDataDefs->nDataDescriptions; i++)
+    for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
     {
         if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
         {
@@ -107,8 +101,10 @@ bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
             mapIDToName[pRB->ID] = std::string(pRB->szName);
             
         }
+        // is not entering here --> probably not needed
         else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
         {
+            cout << "Test if in else block." << endl;
             sSkeletonDescription* pSK = pDataDefs->arrDataDescriptions[i].Data.SkeletonDescription;
             for (int i = 0; i < pSK->nRigidBodies; i++)
             {
@@ -199,10 +195,9 @@ int main()
         upAxis = *(long*)response;
     }
 
-    // try this to prevent program from closing..
+    // to prevent program from closing on its own
     char input = ' ';
     bool exit = false;
-    int iResult;
 
     while (input != 'q') 
     {
@@ -221,14 +216,41 @@ int main()
         {
             printf("\n\n[SampleClient] Requesting Data Descriptions...");
             sDataDescriptions* pDataDefs = NULL;
-            iResult = natnetClient.GetDataDescriptionList(&pDataDefs);
-            if (iResult != ErrorCode_OK || pDataDefs == NULL)
+            int result = natnetClient.GetDataDescriptionList(&pDataDefs);
+            if (result != ErrorCode_OK || pDataDefs == NULL)
             {
                 printf("[SampleClient] Unable to retrieve Data Descriptions.");
             }
             else
             {
                 printf("[SampleClient] Received %d Data Descriptions:\n", pDataDefs->nDataDescriptions);
+            }
+
+            // getting name and description
+            for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
+            {
+                if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
+                {
+                    sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
+                    cout << "What is pRB?: " << pRB << endl;
+                    mapIDToName[pRB->ID] = std::string(pRB->szName);
+                    cout << "Name is: " << mapIDToName[pRB->ID] << endl << endl;
+                }
+                else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
+                {
+                    cout << "Test if it ever enters here..." << endl;
+                    sSkeletonDescription* pSK = pDataDefs->arrDataDescriptions[i].Data.SkeletonDescription;
+                    for (int i = 0; i < pSK->nRigidBodies; i++)
+                    {
+                        // Note: Within FrameOfMocapData, skeleton rigid body ids are of the form:
+                        //   parent skeleton ID   : high word (upper 16 bits of int)
+                        //   rigid body id        : low word  (lower 16 bits of int)
+                        // 
+                        // However within DataDescriptions they are not, so apply that here for correct lookup during streaming
+                        int id = pSK->RigidBodies[i].ID | (pSK->skeletonID << 16);
+                        mapIDToName[id] = std::string(pSK->RigidBodies[i].szName);
+                    }
+                }
             }
             break;
         }
