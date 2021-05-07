@@ -6,6 +6,7 @@
 #include <math.h>
 #include <map>
 #include <vector>
+#include <thread> 
 
 //NatNet SDK
 #include "NatNetTypes.h"
@@ -21,6 +22,9 @@
 #include "resource.h"
 
 using namespace std;
+
+// boolean variable used in the thread
+atomic_bool keyIsPressed(false); 
 
 // Our NatNet client object.
 NatNetClient natnetClient;
@@ -127,6 +131,69 @@ bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
     return true;
 } 
 
+// function used to request data descriptions from the server
+void data_request()
+{
+    int count = 1; // count to see how many times it has run already
+    while (!keyIsPressed)
+    {
+        printf("\n\n[SampleClient] Requesting Data Descriptions...");
+        sDataDescriptions* pDataDefs = NULL;
+        int result = natnetClient.GetDataDescriptionList(&pDataDefs);
+        if (result != ErrorCode_OK || pDataDefs == NULL)
+        {
+            printf("[SampleClient] Unable to retrieve Data Descriptions.");
+        }
+        else
+        {
+            cout << "Run number " << count << endl;
+            count ++;
+            printf("[SampleClient] Received %d Data Descriptions:\n", pDataDefs->nDataDescriptions);
+        }
+
+        // getting name and description
+        for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
+        {
+            if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
+            {
+                sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
+                mapIDToName[pRB->ID] = std::string(pRB->szName);
+                cout << "Name is: " << mapIDToName[pRB->ID] << endl;
+                //cout << "Rigid Body Description: " << pRB << endl;
+
+                /*const MarkerData& markerPosition = pRB->MarkerPositions[i];
+                cout << "Marker positions are: " << endl;
+                cout << "Position X: " <<  markerPosition[0]  << endl;
+                cout << "Position Y: " << markerPosition[1] << endl;
+                cout << "Position Z: " << markerPosition[2] << endl << endl;*/
+
+                float x, y, z, qx, qy, qz, qw;
+
+                std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
+                std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
+
+                // TODO: check that these are labeled correctly
+                x = get<0>(coords);
+                y = get<2>(coords);
+                z = get<1>(coords);
+                qx = get<0>(quads);
+                qy = get<1>(quads);
+                qz = get<2>(quads);
+                qw = get<3>(quads);
+
+                cout << "Coordinates:  x = " << x << ",  y = " << y << ",  z = " << z << endl;
+                cout << "Angles:  qx = " << qx << ",  qy = " << qy << ",  qz = " << qz << ",  qw = " << qw << endl << endl;
+
+                // TODO: call this function to get quaternation values as Euleur values
+                //EulerAngles Eul_FromQuat(Quat q, int order);
+
+            }
+        }
+        cout << "Press any key to quit." << endl << endl;;
+        Sleep(5000); // sleep for 5 seconds 
+    }
+}
+
 int main()
 {
     // print version info
@@ -194,15 +261,33 @@ int main()
     {
         upAxis = *(long*)response;
     }
+    
+    // using a thread to keep it running until a button is pressed
+    thread loopThread = thread(data_request);
+#ifdef _WIN32 || _WIN64
+    system("pause");
+#else system("read -n1");
+#endif 
+    keyIsPressed = true;
+    loopThread.join();
+
+    cout << "Quitting..." << endl;
+
+    // everything below is implemented through the threading above, so may not need this here anymore..
 
     // to prevent program from closing on its own
-    char input = ' ';
-    bool exit = false;
+    //char input = ' ';
+    //bool exit = false;
 
-    while (input != 'q') 
+    /*while (input != 'q') 
     {
         cout << "Select 'q' to quit, 'd' to request data desctiptions." << endl;
         cin >> input;
+
+        if (cin.get()) 
+        {
+            cout << "testing what this does." << endl;
+        }
 
         switch (input)
         {
@@ -225,6 +310,7 @@ int main()
             {
                 printf("[SampleClient] Received %d Data Descriptions:\n", pDataDefs->nDataDescriptions);
             }
+            cout << endl;
 
             // getting name and description
             for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
@@ -232,11 +318,43 @@ int main()
                 if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
                 {
                     sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
-                    cout << "What is pRB?: " << pRB << endl;
                     mapIDToName[pRB->ID] = std::string(pRB->szName);
-                    cout << "Name is: " << mapIDToName[pRB->ID] << endl << endl;
+                    cout << "Name is: " << mapIDToName[pRB->ID] << endl;
+                    //cout << "Rigid Body Description: " << pRB << endl;
+
+                    // is this what is needed??
+                    /*const MarkerData& markerPosition = pRB->MarkerPositions[i];
+                    cout << "Marker positions are: " << endl;
+                    cout << "Position X: " <<  markerPosition[0]  << endl;
+                    cout << "Position Y: " << markerPosition[1] << endl;
+                    cout << "Position Z: " << markerPosition[2] << endl << endl;*/
+
+                    /*float x, y, z, qx, qy, qz, qw;
+
+                    std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
+                    std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
+
+                    // TODO: check that these are labeled correctly
+                    x = get<0>(coords);
+                    y = get<2>(coords);
+                    z = get<1>(coords);
+                    qx = get<0>(quads);
+                    qy = get<1>(quads);
+                    qz = get<2>(quads);
+                    qw = get<3>(quads);
+
+                    cout << "Coordinates:  x = " << x << ",  y = " << y << ",  z = " << z << endl;
+                    cout << "Angles:  qx = " << qx << ",  qy = " << qy << ",  qz = " << qz << ",  qw = " << qw << endl << endl;
+
+                   // cout << "Printing coordinates: " << get<0>(coords) << ", " << get<1>(coords) << ", " << get<2>(coords) << endl;
+                   // cout << "Printing quaternion: " << get<0>(quads) << ", " << get<1>(quads) << ", " << get<2>(quads) << ", " << get<3>(quads) << endl;
+
+                    // TODO: call this function to get quaternation values as Euleur values
+                    //EulerAngles Eul_FromQuat(Quat q, int order);
+
+
                 }
-                else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
+                /*else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
                 {
                     cout << "Test if it ever enters here..." << endl;
                     sSkeletonDescription* pSK = pDataDefs->arrDataDescriptions[i].Data.SkeletonDescription;
@@ -250,8 +368,8 @@ int main()
                         int id = pSK->RigidBodies[i].ID | (pSK->skeletonID << 16);
                         mapIDToName[id] = std::string(pSK->RigidBodies[i].szName);
                     }
-                }
-            }
+                }*/
+            /*}
             break;
         }
         default: { break; }
@@ -259,7 +377,7 @@ int main()
 
         }
 
-    }
+    }*/
  
     // Done - clean up.
     natnetClient.Disconnect();
