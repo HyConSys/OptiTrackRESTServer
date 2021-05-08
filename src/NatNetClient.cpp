@@ -1,14 +1,26 @@
-// client application.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
-#include "NNClient.h"
-#include <cpprest/json.h>
+#include <iostream>
+#include <string>
+#include <math.h>
 #include <map>
+#include <vector>
+#include <thread>
+#include <map>
+#include <windows.h>
+#include <winsock.h>
+#include <cpprest/json.h>
 
-using namespace std;
+
+//NatNet SDK
+#include "NatNetCAPI.h"
+#include "NatNetClient.h"
+#include "natutils.h"
+#include "resource.h"
+#include "RigidBodyCollection.h"
+#include "MarkerPositionCollection.h"
+
 
 // boolean variable used in the thread
-atomic_bool keyIsPressed(false); 
+std::atomic_bool exit_request(false); 
 
 // Our NatNet client object.
 NatNetClient natnetClient;
@@ -19,7 +31,9 @@ MarkerPositionCollection markerPositions;
 RigidBodyCollection rigidBodies;
 
 std::map<int, std::string> mapIDToName;
+
 extern std::map<utility::string_t, utility::string_t> dictionary;
+extern std::mutex dict_m;
 
 // Ready to render?
 bool render = true;
@@ -59,50 +73,6 @@ void DataHandler(sFrameOfMocapData* data, void* pUserData)
     render = true;
 }
 
-// parsing the data description
-bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
-{
-    mapIDToName.clear();
-
-    if (pDataDefs == NULL || pDataDefs->nDataDescriptions <= 0)
-        return false;
-
-    // preserve a "RigidBody ID to Rigid Body Name" mapping, which we can lookup during data streaming
-    int iSkel = 0;
-    for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
-    {
-        if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
-        {
-            sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
-            mapIDToName[pRB->ID] = std::string(pRB->szName);
-            
-        }
-        // is not entering here --> probably not needed
-        else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
-        {
-            cout << "Test if in else block." << endl;
-            sSkeletonDescription* pSK = pDataDefs->arrDataDescriptions[i].Data.SkeletonDescription;
-            for (int i = 0; i < pSK->nRigidBodies; i++)
-            {
-                // Note: Within FrameOfMocapData, skeleton rigid body ids are of the form:
-                //   parent skeleton ID   : high word (upper 16 bits of int)
-                //   rigid body id        : low word  (lower 16 bits of int)
-                // 
-                // However within DataDescriptions they are not, so apply that here for correct lookup during streaming
-                int id = pSK->RigidBodies[i].ID | (pSK->skeletonID << 16);
-                mapIDToName[id] = std::string(pSK->RigidBodies[i].szName);
-                std::cout << mapIDToName[id] << std::endl;
-            }
-            iSkel++;
-        }
-        else
-            continue;
-        continue;
-    }
-
-    return true;
-} 
-
 std::wstring StringToWString(const std::string &s) {
     std::wstring wsTmp(s.begin(), s.end());
     return wsTmp;
@@ -111,14 +81,13 @@ std::wstring StringToWString(const std::string &s) {
 // request data descriptions from server
 void data_request()
 {
-    //int count = 1; // count to see how many times it has run already
-    while (!keyIsPressed)
+    while (!exit_request)
     {
         sDataDescriptions* pDataDefs = NULL;
         int result = natnetClient.GetDataDescriptionList(&pDataDefs);
         if (result != ErrorCode_OK || pDataDefs == NULL)
         {
-            printf("[SampleClient] Unable to retrieve Data Descriptions.");
+            std::cout << "NatNetClient: Unable to retrieve Data Descriptions." << std::endl;
         }
         
         // getting name and description
@@ -134,13 +103,13 @@ void data_request()
                 std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
                 std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
 
-                x = get<2>(coords);
-                y = get<0>(coords);
-                z = get<1>(coords);
-                qx = get<0>(quads);
-                qy = get<1>(quads);
-                qz = get<2>(quads);
-                qw = get<3>(quads);
+                x = std::get<2>(coords);
+                y = std::get<0>(coords);
+                z = std::get<1>(coords);
+                qx = std::get<0>(quads);
+                qy = std::get<1>(quads);
+                qz = std::get<2>(quads);
+                qw = std::get<3>(quads);
 
                 Quat qu;
                 qu.x = qx;
@@ -149,10 +118,12 @@ void data_request()
                 qu.w = qw;
                 EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
-                dictionary[StringToWString(mapIDToName[pRB->ID])] = to_wstring(x) + L", " +  to_wstring(y) + L", " + to_wstring(angles.z);
+                dict_m.lock();
+                dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z);
+                dict_m.unlock();
 
             }
         }
-        Sleep(1000); // sleep for 1 second
+        Sleep(100); // sleep for 100 ms
     }
 }
