@@ -1,25 +1,9 @@
 // client application.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <iostream>
-#include <string>
-#include <math.h>
+#include "NNClient.h"
+#include <cpprest/json.h>
 #include <map>
-#include <vector>
-#include <thread> 
-
-//NatNet SDK
-#include "NatNetTypes.h"
-#include "NatNetCAPI.h"
-#include "NatNetClient.h"
-#include "natutils.h"
-
-#include "RigidBodyCollection.h"
-#include "MarkerPositionCollection.h"
-
-#include <windows.h>
-#include <winsock.h>
-#include "resource.h"
 
 using namespace std;
 
@@ -35,6 +19,7 @@ MarkerPositionCollection markerPositions;
 RigidBodyCollection rigidBodies;
 
 std::map<int, std::string> mapIDToName;
+extern std::map<utility::string_t, utility::string_t> dictionary;
 
 // Ready to render?
 bool render = true;
@@ -49,12 +34,6 @@ float unitConversion = 1.0f;
 int IPAddress[4] = { 127, 0, 0, 1 };
 
 int g_analogSamplesPerMocapFrame = 0;
-
-// NatNet 
-void NATNET_CALLCONV DataHandler(sFrameOfMocapData* data, void* pUserData);    // receives data from the server
-void NATNET_CALLCONV MessageHandler(Verbosity msgType, const char* msg);      // receives NatNet error messages
-bool InitNatNet(LPSTR szIPAddress, LPSTR szServerIPAddress, ConnectionType connType); // this is connecting to the server
-bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs);
 
 // NatNet data callback function. Stores rigid body and marker data in the file level 
 // variables markerPositions, and rigidBodies and sets the file level variable render
@@ -79,13 +58,6 @@ void DataHandler(sFrameOfMocapData* data, void* pUserData)
 
     render = true;
 }
-
-// [Optional] Handler for NatNet messages. 
-void NATNET_CALLCONV MessageHandler(Verbosity msgType, const char* msg)
-{
-    printf("\n[SampleClient] Message received: %s\n", msg);
-}
-
 
 // parsing the data description
 bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
@@ -131,26 +103,24 @@ bool ParseRigidBodyDescription(sDataDescriptions* pDataDefs)
     return true;
 } 
 
-// function used to request data descriptions from the server
+std::wstring StringToWString(const std::string &s) {
+    std::wstring wsTmp(s.begin(), s.end());
+    return wsTmp;
+}
+
+// request data descriptions from server
 void data_request()
 {
-    int count = 1; // count to see how many times it has run already
+    //int count = 1; // count to see how many times it has run already
     while (!keyIsPressed)
     {
-        printf("\n\n[SampleClient] Requesting Data Descriptions...");
         sDataDescriptions* pDataDefs = NULL;
         int result = natnetClient.GetDataDescriptionList(&pDataDefs);
         if (result != ErrorCode_OK || pDataDefs == NULL)
         {
             printf("[SampleClient] Unable to retrieve Data Descriptions.");
         }
-        else
-        {
-            cout << "Run number " << count << endl;
-            count ++;
-            printf("[SampleClient] Received %d Data Descriptions:\n", pDataDefs->nDataDescriptions);
-        }
-
+        
         // getting name and description
         for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
         {
@@ -158,307 +128,31 @@ void data_request()
             {
                 sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
                 mapIDToName[pRB->ID] = std::string(pRB->szName);
-                cout << "Name is: " << mapIDToName[pRB->ID] << endl;
-                //cout << "Rigid Body Description: " << pRB << endl;
-
-                /*const MarkerData& markerPosition = pRB->MarkerPositions[i];
-                cout << "Marker positions are: " << endl;
-                cout << "Position X: " <<  markerPosition[0]  << endl;
-                cout << "Position Y: " << markerPosition[1] << endl;
-                cout << "Position Z: " << markerPosition[2] << endl << endl;*/
 
                 float x, y, z, qx, qy, qz, qw;
 
                 std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
                 std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
 
-                // TODO: check that these are labeled correctly
-                x = get<0>(coords);
-                y = get<2>(coords);
+                x = get<2>(coords);
+                y = get<0>(coords);
                 z = get<1>(coords);
                 qx = get<0>(quads);
                 qy = get<1>(quads);
                 qz = get<2>(quads);
                 qw = get<3>(quads);
 
-                cout << "Coordinates:  x = " << x << ",  y = " << y << ",  z = " << z << endl;
-                cout << "Angles:  qx = " << qx << ",  qy = " << qy << ",  qz = " << qz << ",  qw = " << qw << endl << endl;
+                Quat qu;
+                qu.x = qx;
+                qu.y = qy;
+                qu.z = qz;
+                qu.w = qw;
+                EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
-                // TODO: call this function to get quaternation values as Euleur values
-                //EulerAngles Eul_FromQuat(Quat q, int order);
+                dictionary[StringToWString(mapIDToName[pRB->ID])] = to_wstring(x) + L", " +  to_wstring(y) + L", " + to_wstring(angles.z);
 
             }
         }
-        cout << "Press any key to quit." << endl << endl;;
-        Sleep(5000); // sleep for 5 seconds 
+        Sleep(1000); // sleep for 1 second
     }
 }
-
-int main()
-{
-    // print version info
-    unsigned char ver[4];
-    NatNet_GetVersion(ver);
-    printf("NatNet Sample Client (NatNet ver. %d.%d.%d.%d)\n", ver[0], ver[1], ver[2], ver[3]);
-
-    // Set callback handlers
-    // Callback for NatNet messages
-    NatNet_SetLogCallback(MessageHandler);
-
-    // set the frame callback handler
-    natnetClient.SetFrameReceivedCallback(DataHandler);
-
-    // connect to the server
-    sNatNetClientConnectParams connectParams;
-    connectParams.connectionType = ConnectionType::ConnectionType_Multicast;
-    connectParams.localAddress = "192.168.1.194";
-    connectParams.serverAddress = "192.168.1.194";
-    int retCode = natnetClient.Connect(connectParams);
-    if (retCode != ErrorCode_OK)
-    {
-        //Unable to connect to server.
-        cout << "Unable to connect to server." << endl;
-        return false;
-    }
-    else
-    {
-        // Print server info
-        sServerDescription ServerDescription;
-        memset(&ServerDescription, 0, sizeof(ServerDescription));
-        natnetClient.GetServerDescription(&ServerDescription);
-        if (!ServerDescription.HostPresent)
-        {
-            //Unable to connect to server. Host not present
-            cout << "Unable to connect to server. Host is not present." << endl;
-            return false;
-        }
-    }
-
-    // retrieve rigid body descriptions from server
-    sDataDescriptions* pDataDefs = NULL;
-    retCode = natnetClient.GetDataDescriptionList(&pDataDefs);
-    if (retCode != ErrorCode_OK || ParseRigidBodyDescription(pDataDefs) == false)
-    {
-        cout << "Unable to retrieve RigidBody description." << endl;
-        return false;
-    }
-    // freeing the data descriptions
-    NatNet_FreeDescriptions(pDataDefs);
-    pDataDefs = NULL;
-
-    // example of NatNet general message passing. Set units to millimeters
-    // and get the multiplicative conversion factor in the response.
-    // sending and receiving NetNat test command
-    void* response;
-    int nBytes;
-    retCode = natnetClient.SendMessageAndWait("UnitsToMillimeters", &response, &nBytes);
-    if (retCode == ErrorCode_OK)
-    {
-        unitConversion = *(float*)response;
-    }
-    retCode = natnetClient.SendMessageAndWait("UpAxis", &response, &nBytes);
-    if (retCode == ErrorCode_OK)
-    {
-        upAxis = *(long*)response;
-    }
-    
-    // using a thread to keep it running until a button is pressed
-    thread loopThread = thread(data_request);
-#ifdef _WIN32 || _WIN64
-    system("pause");
-#else system("read -n1");
-#endif 
-    keyIsPressed = true;
-    loopThread.join();
-
-    cout << "Quitting..." << endl;
-
-    // everything below is implemented through the threading above, so may not need this here anymore..
-
-    // to prevent program from closing on its own
-    //char input = ' ';
-    //bool exit = false;
-
-    /*while (input != 'q') 
-    {
-        cout << "Select 'q' to quit, 'd' to request data desctiptions." << endl;
-        cin >> input;
-
-        if (cin.get()) 
-        {
-            cout << "testing what this does." << endl;
-        }
-
-        switch (input)
-        {
-        case 'q':
-        {
-            cout << "Quitting..." << endl;
-            exit = true;
-            break;
-        }
-        case 'd':
-        {
-            printf("\n\n[SampleClient] Requesting Data Descriptions...");
-            sDataDescriptions* pDataDefs = NULL;
-            int result = natnetClient.GetDataDescriptionList(&pDataDefs);
-            if (result != ErrorCode_OK || pDataDefs == NULL)
-            {
-                printf("[SampleClient] Unable to retrieve Data Descriptions.");
-            }
-            else
-            {
-                printf("[SampleClient] Received %d Data Descriptions:\n", pDataDefs->nDataDescriptions);
-            }
-            cout << endl;
-
-            // getting name and description
-            for (int i = 0; i < pDataDefs->nDataDescriptions; i++)
-            {
-                if (pDataDefs->arrDataDescriptions[i].type == Descriptor_RigidBody)
-                {
-                    sRigidBodyDescription* pRB = pDataDefs->arrDataDescriptions[i].Data.RigidBodyDescription;
-                    mapIDToName[pRB->ID] = std::string(pRB->szName);
-                    cout << "Name is: " << mapIDToName[pRB->ID] << endl;
-                    //cout << "Rigid Body Description: " << pRB << endl;
-
-                    // is this what is needed??
-                    /*const MarkerData& markerPosition = pRB->MarkerPositions[i];
-                    cout << "Marker positions are: " << endl;
-                    cout << "Position X: " <<  markerPosition[0]  << endl;
-                    cout << "Position Y: " << markerPosition[1] << endl;
-                    cout << "Position Z: " << markerPosition[2] << endl << endl;*/
-
-                    /*float x, y, z, qx, qy, qz, qw;
-
-                    std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
-                    std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
-
-                    // TODO: check that these are labeled correctly
-                    x = get<0>(coords);
-                    y = get<2>(coords);
-                    z = get<1>(coords);
-                    qx = get<0>(quads);
-                    qy = get<1>(quads);
-                    qz = get<2>(quads);
-                    qw = get<3>(quads);
-
-                    cout << "Coordinates:  x = " << x << ",  y = " << y << ",  z = " << z << endl;
-                    cout << "Angles:  qx = " << qx << ",  qy = " << qy << ",  qz = " << qz << ",  qw = " << qw << endl << endl;
-
-                   // cout << "Printing coordinates: " << get<0>(coords) << ", " << get<1>(coords) << ", " << get<2>(coords) << endl;
-                   // cout << "Printing quaternion: " << get<0>(quads) << ", " << get<1>(quads) << ", " << get<2>(quads) << ", " << get<3>(quads) << endl;
-
-                    // TODO: call this function to get quaternation values as Euleur values
-                    //EulerAngles Eul_FromQuat(Quat q, int order);
-
-
-                }
-                /*else if (pDataDefs->arrDataDescriptions[i].type == Descriptor_Skeleton)
-                {
-                    cout << "Test if it ever enters here..." << endl;
-                    sSkeletonDescription* pSK = pDataDefs->arrDataDescriptions[i].Data.SkeletonDescription;
-                    for (int i = 0; i < pSK->nRigidBodies; i++)
-                    {
-                        // Note: Within FrameOfMocapData, skeleton rigid body ids are of the form:
-                        //   parent skeleton ID   : high word (upper 16 bits of int)
-                        //   rigid body id        : low word  (lower 16 bits of int)
-                        // 
-                        // However within DataDescriptions they are not, so apply that here for correct lookup during streaming
-                        int id = pSK->RigidBodies[i].ID | (pSK->skeletonID << 16);
-                        mapIDToName[id] = std::string(pSK->RigidBodies[i].szName);
-                    }
-                }*/
-            /*}
-            break;
-        }
-        default: { break; }
-        if (exit) { break; }
-
-        }
-
-    }*/
- 
-    // Done - clean up.
-    natnetClient.Disconnect();
-
-    return 0;
-}
-
-// Initialize the NatNet client with client and server IP addresses.
-bool InitNatNet(LPSTR szIPAddress, LPSTR szServerIPAddress, ConnectionType connType)
-{
-    unsigned char ver[4];
-    NatNet_GetVersion(ver);
-
-    // Set callback handlers
-    // Callback for NatNet messages.
-    NatNet_SetLogCallback(MessageHandler);
-    // this function will receive data from the server
-    natnetClient.SetFrameReceivedCallback(DataHandler);
-
-    // step 2b - connect to server
-    sNatNetClientConnectParams connectParams;
-    connectParams.connectionType = connType;
-    connectParams.localAddress = szIPAddress;
-    connectParams.serverAddress = szServerIPAddress;
-    int retCode = natnetClient.Connect(connectParams);
-    if (retCode != ErrorCode_OK)
-    {
-        //Unable to connect to server.
-        return false;
-    }
-    else
-    {
-        // Print server info
-        sServerDescription ServerDescription;
-        memset(&ServerDescription, 0, sizeof(ServerDescription));
-        natnetClient.GetServerDescription(&ServerDescription);
-        if (!ServerDescription.HostPresent)
-        {
-            //Unable to connect to server. Host not present
-            return false;
-        }
-    }
-
-    // Retrieve RigidBody description from server
-    sDataDescriptions* pDataDefs = NULL;
-    // step 3a - getting data descriptions
-    retCode = natnetClient.GetDataDescriptionList(&pDataDefs);
-    if (retCode != ErrorCode_OK || ParseRigidBodyDescription(pDataDefs) == false)
-    {
-        //Unable to retrieve RigidBody description
-        //return false;
-    }
-    // step 3c - freeing the data descriptions
-    NatNet_FreeDescriptions(pDataDefs);
-    pDataDefs = NULL;
-
-    // example of NatNet general message passing. Set units to millimeters
-    // and get the multiplicative conversion factor in the response.
-    void* response;
-    int nBytes;
-    // step 2d - sending NetNat commands
-    retCode = natnetClient.SendMessageAndWait("UnitsToMillimeters", &response, &nBytes);
-    if (retCode == ErrorCode_OK)
-    {
-        unitConversion = *(float*)response;
-    }
-
-    // step 2d - sending NetNat commands
-    retCode = natnetClient.SendMessageAndWait("UpAxis", &response, &nBytes);
-    if (retCode == ErrorCode_OK)
-    {
-        upAxis = *(long*)response;
-    }
-
-    return true;
-}
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
