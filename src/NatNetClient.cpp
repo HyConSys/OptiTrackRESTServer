@@ -118,8 +118,11 @@ void data_request()
                 qu.w = qw;
                 EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
-                dict_m.lock();
-                dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z);
+                dict_m.lock();                
+                if(rigidBodies.GetParams(i) == 1)
+                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z);
+                else
+                    dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
 
             }

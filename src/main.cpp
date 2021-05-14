@@ -13,7 +13,7 @@
 // configs
 
 #define REST_SERVER_URL L"http://*:12345/OptiTrackRestServer"
-#define LOCAL_IP_ADDRESS "192.168.1.194"
+#define LOCAL_IP_ADDRESS "127.0.0.1"
 #define OPTITRACK_SERVER_IP_ADDRESS LOCAL_IP_ADDRESS
 
 using namespace web;
@@ -50,7 +50,7 @@ int main(){
    if (retCode != ErrorCode_OK)
    {
       //Unable to connect to server.
-      cout << "Unable to connect to OptiTrack Motive stream-server." << endl;
+      cout << "Error: Unable to connect to OptiTrack Motive stream-server." << endl;
       return false;
    }
    else
@@ -62,7 +62,7 @@ int main(){
       if (!ServerDescription.HostPresent)
       {
          //Unable to connect to server. Host not present
-         cout << "Unable to connect to server. Host is not present." << endl;
+         cout << "Error: Unable to connect to server. Host is not present." << endl;
          return false;
       }
    }

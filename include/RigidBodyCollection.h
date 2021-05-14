@@ -1,5 +1,5 @@
 /* 
-Copyright © 2014 NaturalPoint Inc.
+Copyright ï¿½ 2014 NaturalPoint Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -94,6 +94,17 @@ public:
   //////////////////////////////////////////////////////////////////////////
   const std::tuple<float,float,float>& GetCoordinates(size_t i) const { return mXYZCoord[i]; }
 
+
+  //////////////////////////////////////////////////////////////////////////
+  /// <summary>
+  /// Gets the params of the ith rigid body.
+  /// </summary>
+  /// <param name='i'>Index of the rigid body. Valid value are 
+  /// 0 to RigidBodyCollection::Count() - 1</param>
+  /// <returns>Params of the rigid body.</returns>
+  //////////////////////////////////////////////////////////////////////////
+  int16_t GetParams(size_t i) const { return mParams[i]; }
+
   //////////////////////////////////////////////////////////////////////////
   /// <summary>
   /// Gets the Quaternion of the ith rigid body.
@@ -142,6 +153,9 @@ private:
 
   // Number of rigid bodies.
   size_t mNumRigidBodies;
+
+  // Rigid body params.
+  int16_t mParams[MAX_RIGIDBODY_COUNT];
 };
 
 #endif // _RIGIDBODYCOLLECTION_H_

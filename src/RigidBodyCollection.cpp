@@ -1,5 +1,5 @@
 /* 
-Copyright © 2014 NaturalPoint Inc.
+Copyright ï¿½ 2014 NaturalPoint Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ void RigidBodyCollection::AppendRigidBodyData(sRigidBodyData const * const rigid
 
       mXYZWQuats[i + mNumRigidBodies] = std::make_tuple(rb.qx, rb.qy, rb.qz, rb.qw);
       mIds[i + mNumRigidBodies] = rb.ID;
+
+      mParams[i + mNumRigidBodies] = rb.params;
     }
     mNumRigidBodies += numRigidBodies;
 }
