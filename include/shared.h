@@ -6,7 +6,7 @@
 //NatNet Stuff
 #include "NatNetTypes.h"
 #include "NatNetClient.h"
-#include "NatNetCAPI.h"
+//#include "NatNetCAPI.h"
 
 // externs
 extern std::atomic_bool exit_request; 

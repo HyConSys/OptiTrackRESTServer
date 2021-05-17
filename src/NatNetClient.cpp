@@ -11,7 +11,7 @@
 
 
 //NatNet SDK
-#include "NatNetCAPI.h"
+//#include "NatNetCAPI.h" 
 #include "NatNetClient.h"
 #include "natutils.h"
 #include "resource.h"

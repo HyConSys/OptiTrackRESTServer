@@ -115,14 +115,14 @@ version 3.0.0.0
 
 // NatNet uses to set reporting level of messages.
 // Clients use to set level of messages to receive.
-typedef enum Verbosity
-{
-    Verbosity_None = 0,
-    Verbosity_Debug,
-    Verbosity_Info,
-    Verbosity_Warning,
-    Verbosity_Error,
-} Verbosity;
+// typedef enum Verbosity
+// {
+//     Verbosity_None = 0,
+//     Verbosity_Debug,
+//     Verbosity_Info,
+//     Verbosity_Warning,
+//     Verbosity_Error,
+// } Verbosity;
 
 
 // NatNet error reporting codes
@@ -184,20 +184,20 @@ typedef struct sSender_Server
 
 // packet
 // note : only used by clients who are depacketizing NatNet packets directly
-typedef struct sPacket
-{
-    uint16_t iMessage;                      // message ID (e.g. NAT_FRAMEOFDATA)
-    uint16_t nDataBytes;                    // Num bytes in payload
-    union
-    {
-        uint8_t         cData[MAX_PACKETSIZE];
-        char            szData[MAX_PACKETSIZE];
-        uint32_t        lData[MAX_PACKETSIZE/sizeof(uint32_t)];
-        float           fData[MAX_PACKETSIZE/sizeof(float)];
-        sSender         Sender;
-        sSender_Server  SenderServer;
-    } Data;                                 // payload - statically allocated for convenience.  Actual packet size is determined by  nDataBytes
-} sPacket;
+// typedef struct sPacket
+// {
+//     uint16_t iMessage;                      // message ID (e.g. NAT_FRAMEOFDATA)
+//     uint16_t nDataBytes;                    // Num bytes in payload
+//     union
+//     {
+//         uint8_t         cData[MAX_PACKETSIZE];
+//         char            szData[MAX_PACKETSIZE];
+//         uint32_t        lData[MAX_PACKETSIZE/sizeof(uint32_t)];
+//         float           fData[MAX_PACKETSIZE/sizeof(float)];
+//         sSender         Sender;
+//         sSender_Server  SenderServer;
+//     } Data;                                 // payload - statically allocated for convenience.  Actual packet size is determined by  nDataBytes
+// } sPacket;
 
 #pragma pack(pop)
 
@@ -292,13 +292,13 @@ typedef struct sRigidBodyData
 
 
 // Skeleton Description
-typedef struct sSkeletonDescription
-{
-    char szName[MAX_NAMELENGTH];                            // Skeleton name
-    int32_t skeletonID;                                     // Skeleton unqiue identifier
-    int32_t nRigidBodies;                                   // # of rigid bodies (bones) in skeleton
-    sRigidBodyDescription RigidBodies[MAX_SKELRIGIDBODIES]; // array of rigid body (bone) descriptions 
-} sSkeletonDescription;
+// typedef struct sSkeletonDescription
+// {
+//     char szName[MAX_NAMELENGTH];                            // Skeleton name
+//     int32_t skeletonID;                                     // Skeleton unqiue identifier
+//     int32_t nRigidBodies;                                   // # of rigid bodies (bones) in skeleton
+//     sRigidBodyDescription RigidBodies[MAX_SKELRIGIDBODIES]; // array of rigid body (bone) descriptions 
+// } sSkeletonDescription;
 
 
 // Skeleton Data
@@ -310,20 +310,20 @@ typedef struct sSkeletonData
 } sSkeletonData;
 
 // FrocePlate description
-typedef struct sForcePlateDescription
-{
-    int32_t ID;                                     // used for order, and for identification in the data stream
-    char strSerialNo[128];                          // for unique plate identification
-    float fWidth;                                   // plate physical width (manufacturer supplied)
-    float fLength;                                  // plate physical length (manufacturer supplied)
-    float fOriginX, fOriginY, fOriginZ;             // electrical center offset (from electrical center to geometric center-top of force plate) (manufacturer supplied)
-    float fCalMat[12][12];                          // force plate calibration matrix (for raw analog voltage channel type only)
-    float fCorners[4][3];                           // plate corners, in world (aka Mocap System) coordinates, clockwise from plate +x,+y (refer to C3D spec for details)
-    int32_t iPlateType;                             // force plate 'type' (refer to C3D spec for details) 
-    int32_t iChannelDataType;                       // 0=Calibrated force data, 1=Raw analog voltages
-    int32_t nChannels;                              // # of channels (signals)
-    char szChannelNames[MAX_ANALOG_CHANNELS][MAX_NAMELENGTH];   // channel names
-} sForcePlateDescription;
+// typedef struct sForcePlateDescription
+// {
+//     int32_t ID;                                     // used for order, and for identification in the data stream
+//     char strSerialNo[128];                          // for unique plate identification
+//     float fWidth;                                   // plate physical width (manufacturer supplied)
+//     float fLength;                                  // plate physical length (manufacturer supplied)
+//     float fOriginX, fOriginY, fOriginZ;             // electrical center offset (from electrical center to geometric center-top of force plate) (manufacturer supplied)
+//     float fCalMat[12][12];                          // force plate calibration matrix (for raw analog voltage channel type only)
+//     float fCorners[4][3];                           // plate corners, in world (aka Mocap System) coordinates, clockwise from plate +x,+y (refer to C3D spec for details)
+//     int32_t iPlateType;                             // force plate 'type' (refer to C3D spec for details) 
+//     int32_t iChannelDataType;                       // 0=Calibrated force data, 1=Raw analog voltages
+//     int32_t nChannels;                              // # of channels (signals)
+//     char szChannelNames[MAX_ANALOG_CHANNELS][MAX_NAMELENGTH];   // channel names
+// } sForcePlateDescription;
 
 // Peripheral Device description (e.g. NIDAQ)
 typedef struct sDeviceDescription
@@ -348,8 +348,8 @@ typedef struct sDataDescription
     {
         sMarkerSetDescription*  MarkerSetDescription;
         sRigidBodyDescription*  RigidBodyDescription;
-        sSkeletonDescription*   SkeletonDescription;
-        sForcePlateDescription* ForcePlateDescription;
+        //sSkeletonDescription*   SkeletonDescription;
+        //sForcePlateDescription* ForcePlateDescription;
         sDeviceDescription*     DeviceDescription;
     } Data;
 } sDataDescription;
@@ -369,13 +369,13 @@ typedef struct sAnalogChannelData
     float Values[MAX_ANALOG_SUBFRAMES];             // values
 } sAnalogChannelData;
 
-typedef struct sForcePlateData
-{
-    int32_t ID;                                         // ForcePlate ID (from data description)
-    int32_t nChannels;                                  // # of channels (signals) for this force plate
-    sAnalogChannelData ChannelData[MAX_ANALOG_CHANNELS];// Channel (signal) data (e.g. Fx[], Fy[], Fz[])
-    int16_t params;                                     // Host defined flags
-} sForcePlateData;
+// typedef struct sForcePlateData
+// {
+//     int32_t ID;                                         // ForcePlate ID (from data description)
+//     int32_t nChannels;                                  // # of channels (signals) for this force plate
+//     sAnalogChannelData ChannelData[MAX_ANALOG_CHANNELS];// Channel (signal) data (e.g. Fx[], Fy[], Fz[])
+//     int16_t params;                                     // Host defined flags
+// } sForcePlateData;
 
 typedef struct sDeviceData
 {
@@ -405,8 +405,8 @@ typedef struct sFrameOfMocapData
     int32_t nLabeledMarkers;                        // # of Labeled Markers
     sMarker LabeledMarkers[MAX_LABELED_MARKERS];    // Labeled Marker data (labeled markers not associated with a "MarkerSet")
 
-    int32_t nForcePlates;                           // # of force plates
-    sForcePlateData ForcePlates[MAX_FORCEPLATES];   // Force plate data
+    //int32_t nForcePlates;                           // # of force plates
+    //sForcePlateData ForcePlates[MAX_FORCEPLATES];   // Force plate data
 
     int32_t nDevices;                               // # of devices
     sDeviceData Devices[MAX_DEVICES];               // Device data
@@ -445,6 +445,6 @@ typedef struct sNatNetClientConnectParams
 
 
 // Callback function pointer types
-typedef void (NATNET_CALLCONV* NatNetLogCallback)( Verbosity level, const char* message );
+//typedef void (NATNET_CALLCONV* NatNetLogCallback)( Verbosity level, const char* message );
 typedef void (NATNET_CALLCONV* NatNetFrameReceivedCallback)( sFrameOfMocapData* pFrameOfData, void* pUserData );
-typedef void (NATNET_CALLCONV* NatNetUnknownMessageCallback)( sPacket* pPacket, void* pUserData );
+//typedef void (NATNET_CALLCONV* NatNetUnknownMessageCallback)( sPacket* pPacket, void* pUserData );

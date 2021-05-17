@@ -21,7 +21,7 @@ limitations under the License. */
 #include "NATUtils.h"
 #include <float.h>
 
-#include <winsock2.h>
+//#include <winsock2.h>
 #include <iphlpapi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,66 +34,66 @@ limitations under the License. */
 
 #pragma warning( disable : 4244 )
 
-EulerAngles Eul_(float ai, float aj, float ah, int order)
-{
-    EulerAngles ea;
-    ea.x = ai; ea.y = aj; ea.z = ah;
-    ea.w = order;
-    return (ea);
-}
+// EulerAngles Eul_(float ai, float aj, float ah, int order)
+// {
+//     EulerAngles ea;
+//     ea.x = ai; ea.y = aj; ea.z = ah;
+//     ea.w = order;
+//     return (ea);
+// }
 
 /* Construct quaternion from Euler angles (in radians). */
-Quat Eul_ToQuat(EulerAngles ea)
-{
-    Quat qu;
-    double a[3], ti, tj, th, ci, cj, ch, si, sj, sh, cc, cs, sc, ss;
-    int i,j,k,h,n,s,f;
-    EulGetOrd(ea.w,i,j,k,h,n,s,f);
-    if (f==EulFrmR) {float t = ea.x; ea.x = ea.z; ea.z = t;}
-    if (n==EulParOdd) ea.y = -ea.y;
-    ti = ea.x*0.5; tj = ea.y*0.5; th = ea.z*0.5;
-    ci = cos(ti);  cj = cos(tj);  ch = cos(th);
-    si = sin(ti);  sj = sin(tj);  sh = sin(th);
-    cc = ci*ch; cs = ci*sh; sc = si*ch; ss = si*sh;
-    if (s==EulRepYes) {
-        a[i] = cj*(cs + sc);	/* Could speed up with */
-        a[j] = sj*(cc + ss);	/* trig identities. */
-        a[k] = sj*(cs - sc);
-        qu.w = cj*(cc - ss);
-    } else {
-        a[i] = cj*sc - sj*cs;
-        a[j] = cj*ss + sj*cc;
-        a[k] = cj*cs - sj*sc;
-        qu.w = cj*cc + sj*ss;
-    }
-    if (n==EulParOdd) a[j] = -a[j];
-    qu.x = a[X]; qu.y = a[Y]; qu.z = a[Z];
-    return (qu);
-}
+// Quat Eul_ToQuat(EulerAngles ea)
+// {
+//     Quat qu;
+//     double a[3], ti, tj, th, ci, cj, ch, si, sj, sh, cc, cs, sc, ss;
+//     int i,j,k,h,n,s,f;
+//     EulGetOrd(ea.w,i,j,k,h,n,s,f);
+//     if (f==EulFrmR) {float t = ea.x; ea.x = ea.z; ea.z = t;}
+//     if (n==EulParOdd) ea.y = -ea.y;
+//     ti = ea.x*0.5; tj = ea.y*0.5; th = ea.z*0.5;
+//     ci = cos(ti);  cj = cos(tj);  ch = cos(th);
+//     si = sin(ti);  sj = sin(tj);  sh = sin(th);
+//     cc = ci*ch; cs = ci*sh; sc = si*ch; ss = si*sh;
+//     if (s==EulRepYes) {
+//         a[i] = cj*(cs + sc);	/* Could speed up with */
+//         a[j] = sj*(cc + ss);	/* trig identities. */
+//         a[k] = sj*(cs - sc);
+//         qu.w = cj*(cc - ss);
+//     } else {
+//         a[i] = cj*sc - sj*cs;
+//         a[j] = cj*ss + sj*cc;
+//         a[k] = cj*cs - sj*sc;
+//         qu.w = cj*cc + sj*ss;
+//     }
+//     if (n==EulParOdd) a[j] = -a[j];
+//     qu.x = a[X]; qu.y = a[Y]; qu.z = a[Z];
+//     return (qu);
+// }
 
 /* Construct matrix from Euler angles (in radians). */
-void Eul_ToHMatrix(EulerAngles ea, HMatrix M)
-{
-    double ti, tj, th, ci, cj, ch, si, sj, sh, cc, cs, sc, ss;
-    int i,j,k,h,n,s,f;
-    EulGetOrd(ea.w,i,j,k,h,n,s,f);
-    if (f==EulFrmR) {float t = ea.x; ea.x = ea.z; ea.z = t;}
-    if (n==EulParOdd) {ea.x = -ea.x; ea.y = -ea.y; ea.z = -ea.z;}
-    ti = ea.x;	  tj = ea.y;	th = ea.z;
-    ci = cos(ti); cj = cos(tj); ch = cos(th);
-    si = sin(ti); sj = sin(tj); sh = sin(th);
-    cc = ci*ch; cs = ci*sh; sc = si*ch; ss = si*sh;
-    if (s==EulRepYes) {
-        M[i][i] = cj;	  M[i][j] =  sj*si;    M[i][k] =  sj*ci;
-        M[j][i] = sj*sh;  M[j][j] = -cj*ss+cc; M[j][k] = -cj*cs-sc;
-        M[k][i] = -sj*ch; M[k][j] =  cj*sc+cs; M[k][k] =  cj*cc-ss;
-    } else {
-        M[i][i] = cj*ch; M[i][j] = sj*sc-cs; M[i][k] = sj*cc+ss;
-        M[j][i] = cj*sh; M[j][j] = sj*ss+cc; M[j][k] = sj*cs-sc;
-        M[k][i] = -sj;	 M[k][j] = cj*si;    M[k][k] = cj*ci;
-    }
-    M[W][X]=M[W][Y]=M[W][Z]=M[X][W]=M[Y][W]=M[Z][W]=0.0; M[W][W]=1.0;
-}
+// void Eul_ToHMatrix(EulerAngles ea, HMatrix M)
+// {
+//     double ti, tj, th, ci, cj, ch, si, sj, sh, cc, cs, sc, ss;
+//     int i,j,k,h,n,s,f;
+//     EulGetOrd(ea.w,i,j,k,h,n,s,f);
+//     if (f==EulFrmR) {float t = ea.x; ea.x = ea.z; ea.z = t;}
+//     if (n==EulParOdd) {ea.x = -ea.x; ea.y = -ea.y; ea.z = -ea.z;}
+//     ti = ea.x;	  tj = ea.y;	th = ea.z;
+//     ci = cos(ti); cj = cos(tj); ch = cos(th);
+//     si = sin(ti); sj = sin(tj); sh = sin(th);
+//     cc = ci*ch; cs = ci*sh; sc = si*ch; ss = si*sh;
+//     if (s==EulRepYes) {
+//         M[i][i] = cj;	  M[i][j] =  sj*si;    M[i][k] =  sj*ci;
+//         M[j][i] = sj*sh;  M[j][j] = -cj*ss+cc; M[j][k] = -cj*cs-sc;
+//         M[k][i] = -sj*ch; M[k][j] =  cj*sc+cs; M[k][k] =  cj*cc-ss;
+//     } else {
+//         M[i][i] = cj*ch; M[i][j] = sj*sc-cs; M[i][k] = sj*cc+ss;
+//         M[j][i] = cj*sh; M[j][j] = sj*ss+cc; M[j][k] = sj*cs-sc;
+//         M[k][i] = -sj;	 M[k][j] = cj*si;    M[k][k] = cj*ci;
+//     }
+//     M[W][X]=M[W][Y]=M[W][Z]=M[X][W]=M[Y][W]=M[Z][W]=0.0; M[W][W]=1.0;
+// }
 
 /* Convert matrix to Euler angles (in radians). */
 EulerAngles Eul_FromHMatrix(HMatrix M, int order)

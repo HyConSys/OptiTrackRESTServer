@@ -29,7 +29,7 @@ typedef struct NatNetDiscovery_t* NatNetDiscoveryHandle;
 
 
 NATNET_API void NATNET_CALLCONV NatNet_GetVersion( unsigned char outVersion[4] );
-NATNET_API void NATNET_CALLCONV NatNet_SetLogCallback( NatNetLogCallback pfnLogCallback );
+//NATNET_API void NATNET_CALLCONV NatNet_SetLogCallback( NatNetLogCallback pfnLogCallback );
 
 NATNET_API void NATNET_CALLCONV NatNet_DecodeID( int compositeId, int* pOutEntityId, int* pOutMemberId );
 NATNET_API ErrorCode NATNET_CALLCONV NatNet_DecodeTimecode( unsigned int timecode, unsigned int timecodeSubframe, int* pOutHour, int* pOutMinute, int* pOutSecond, int* pOutFrame, int* pOutSubframe );
