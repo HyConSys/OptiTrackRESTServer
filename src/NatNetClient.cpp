@@ -81,10 +81,10 @@ std::wstring StringToWString(const std::string &s) {
 // request data descriptions from server
 void data_request()
 {
-    int prev_x, prev_y = 0;
+    float prev_x, prev_y = 0;
     float v = 0;
-    bool initial = True;
-    int tau_ms = 1000;
+    bool initial = true;
+    int tau_ms = 100;
 
     while (!exit_request)
     {
@@ -124,17 +124,20 @@ void data_request()
                 EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
                 // calculate v
-                if(initial == True)
+                if(initial == true)
                 {
-                    v = 0
+                    v = 0;
                     prev_x = x;
                     prev_y = y;
-                    initial = False;
+                    initial = false;
                 }
                 else
                 {
-                    v = sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2));
-                    v /= (tau_ms/1000.0); // divide difference by the sleep time
+                    std::cout << "x=" << x << ", y=" << y << ", px=" << prev_x << ", py=" << prev_y << std::endl;
+                    v = (float)sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2));
+                    std::cout << "L=" << v << std::endl;
+                    v /= ((float)tau_ms/1000.0f); // divide difference by the sleep time
+                    std::cout << "v=" << v << std::endl << std::endl;
                     
                     // set variables for next calculation
                     prev_x = x;
