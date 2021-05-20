@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <winsock.h>
 #include <cpprest/json.h>
+#include <chrono>
 
 
 //NatNet SDK
@@ -81,13 +82,17 @@ std::wstring StringToWString(const std::string &s) {
 // request data descriptions from server
 void data_request()
 {
-    int prev_x, prev_y = 0;
-    float v = 0;
-    bool initial = True;
-    int tau_ms = 1000;
+    float prev_x = 0.0f, prev_y = 0.0f, prev_t = 0.0f;
+    float v =  0.0f;
+    int tau_ms = 10;
 
+    
+    std::map<string, std::vector<float>> infoDict;
+
+    auto t_start = std::chrono::high_resolution_clock::now();
     while (!exit_request)
     {
+
         sDataDescriptions* pDataDefs = NULL;
         int result = natnetClient.GetDataDescriptionList(&pDataDefs);
         if (result != ErrorCode_OK || pDataDefs == NULL)
@@ -106,6 +111,11 @@ void data_request()
                 float x, y, z, qx, qy, qz, qw;
 
                 std::tuple<float,float,float> coords = rigidBodies.GetCoordinates(i);
+
+                // measure the time
+                auto t_now = std::chrono::high_resolution_clock::now();
+                auto t = (t_now - t_start).count();
+
                 std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
 
                 x = std::get<2>(coords);
@@ -123,28 +133,36 @@ void data_request()
                 qu.w = qw;
                 EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
-                // calculate v
-                if(initial == True)
-                {
-                    v = 0
+                // save prev values
+                if (infoDict[mapIDToName[pRB->ID]].empty()){
+                    prev_t = t;
                     prev_x = x;
                     prev_y = y;
-                    initial = False;
                 }
-                else
-                {
-                    v = sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2));
-                    v /= (tau_ms/1000.0); // divide difference by the sleep time
-                    
-                    // set variables for next calculation
-                    prev_x = x;
-                    prev_y = y;
+                else{
+                    prev_t = infoDict[mapIDToName[pRB->ID]][0];
+                    prev_x = infoDict[mapIDToName[pRB->ID]][1]; // same as prev_x = x
+                    prev_y = infoDict[mapIDToName[pRB->ID]][2]; // same as prev_y = y
+                }
 
-                }
+
+                // add t, x, y to vector in this order
+                std::vector<float> infoVector;
+                infoVector.push_back(t);
+                infoVector.push_back(x);
+                infoVector.push_back(y);
+                infoDict[mapIDToName[pRB->ID]] = infoVector;
+
+                time_diff = t - prev_t;
+                if (time_diff == 0)
+                    V = 0.0F;
+                else
+                    v = sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2))/time_diff;
+
 
                 dict_m.lock();                
                 if(rigidBodies.GetParams(i) == 1)
-                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z) + L", " + std::to_wstring(v);
+                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z) + L", " + std::to_wstring(v);
                 else
                     dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
