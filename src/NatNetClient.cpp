@@ -81,6 +81,11 @@ std::wstring StringToWString(const std::string &s) {
 // request data descriptions from server
 void data_request()
 {
+    int prev_x, prev_y = 0;
+    float v = 0;
+    bool initial = True;
+    int tau_ms = 1000;
+
     while (!exit_request)
     {
         sDataDescriptions* pDataDefs = NULL;
@@ -118,15 +123,34 @@ void data_request()
                 qu.w = qw;
                 EulerAngles angles = Eul_FromQuat(qu, EulOrdZXYs);
 
+                // calculate v
+                if(initial == True)
+                {
+                    v = 0
+                    prev_x = x;
+                    prev_y = y;
+                    initial = False;
+                }
+                else
+                {
+                    v = sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2));
+                    v /= (tau_ms/1000.0); // divide difference by the sleep time
+                    
+                    // set variables for next calculation
+                    prev_x = x;
+                    prev_y = y;
+
+                }
+
                 dict_m.lock();                
                 if(rigidBodies.GetParams(i) == 1)
-                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z);
+                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z) + L", " + std::to_wstring(v);
                 else
                     dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
 
             }
         }
-        Sleep(100); // sleep for 100 ms
+        Sleep(tau_ms); // sleep for 100 ms
     }
 }
