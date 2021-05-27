@@ -36,6 +36,10 @@ std::map<int, std::string> mapIDToName;
 extern std::map<utility::string_t, utility::string_t> dictionary;
 extern std::mutex dict_m;
 
+// x shift due to vehicle weights being off
+float x_shift = 0.09f;
+
+
 // Ready to render?
 bool render = true;
 
@@ -87,7 +91,7 @@ void data_request()
     int tau_ms = 10;
 
     
-    std::map<string, std::vector<float>> infoDict;
+    std::map<std::string, std::vector<float>> infoDict;
 
     auto t_start = std::chrono::high_resolution_clock::now();
     while (!exit_request)
@@ -114,11 +118,11 @@ void data_request()
 
                 // measure the time
                 auto t_now = std::chrono::high_resolution_clock::now();
-                auto t = (t_now - t_start).count();
+                float t = (float)std::chrono::duration<double>(t_now - t_start).count();
 
                 std::tuple<float, float, float, float> quads = rigidBodies.GetQuaternion(i);
 
-                x = std::get<2>(coords);
+                x = std::get<2>(coords) - x_shift;
                 y = std::get<0>(coords);
                 z = std::get<1>(coords);
                 qx = std::get<0>(quads);
@@ -153,11 +157,11 @@ void data_request()
                 infoVector.push_back(y);
                 infoDict[mapIDToName[pRB->ID]] = infoVector;
 
-                time_diff = t - prev_t;
+                float time_diff = t - prev_t;
                 if (time_diff == 0)
-                    V = 0.0F;
+                    v = 0.0F;
                 else
-                    v = sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2))/time_diff;
+                    v = ((float)sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2)))/time_diff;
 
 
                 dict_m.lock();                
