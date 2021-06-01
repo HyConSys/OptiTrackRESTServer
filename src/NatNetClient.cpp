@@ -37,8 +37,7 @@ extern std::map<utility::string_t, utility::string_t> dictionary;
 extern std::mutex dict_m;
 
 // x shift due to vehicle weights being off
-float x_shift = 0.09f;
-
+float x_shift = 0.0f;
 
 // Ready to render?
 bool render = true;
