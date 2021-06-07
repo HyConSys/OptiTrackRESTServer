@@ -2,6 +2,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <filesystem>
 #include <thread>
 #include <mutex>
 #include <stdio.h>
@@ -10,42 +11,110 @@
 
 #include "shared.h"
 
-// configs
-
-#define REST_SERVER_URL L"http://*:12345/OptiTrackRestServer"
-#define LOCAL_IP_ADDRESS "127.0.0.1"
-#define OPTITRACK_SERVER_IP_ADDRESS LOCAL_IP_ADDRESS
+// WSTRING to STRING conversion
+#ifdef _UTF16_STRINGS
+#include <locale>
+#include <codecvt>
+using convert_type = std::codecvt_utf8<wchar_t>;
+std::wstring_convert<convert_type, wchar_t> wstr_converter;
+#define WSTR2STR(S) (wstr_converter.to_bytes(S))
+#else
+#define WSTR2STR(S) (S)
+#endif
 
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
 using namespace std;
 
+// configs come from a JSON File
+json::value json_cfg;
+
+// dictionaries of rigid bodys and a lock to handle sync
 std::mutex dict_m;
 std::map<utility::string_t, utility::string_t> dictionary;
+std::map<utility::string_t, utility::string_t> extraConfigs;
+
 
 void handle_get(http_request request){
    auto answer = json::value::object();
+   utility::string_t query = request.request_uri().query();
+   utility::string_t filter_rb;
+   if(!query.empty()){
+      // remove "RigidBody=" from the text
+      filter_rb = query.replace(0,10,L"");
+   }
+   
 
    dict_m.lock();
-   for (auto const & p : dictionary){
-      answer[p.first] = json::value::string(p.second);
+   if (!query.empty() && !filter_rb.empty()){
+      auto found_at = dictionary.find(filter_rb);
+      if(found_at != dictionary.end()){
+         auto extra_cfg = extraConfigs[filter_rb];
+         if (!extra_cfg.empty())
+            answer[filter_rb] = json::value::string(found_at->second + L", " + extra_cfg);
+         else
+            answer[filter_rb] = json::value::string(found_at->second);
+      }
+      else{
+         answer[filter_rb] = json::value::string(L"");
+      }
+   }
+   else
+   {
+      for (auto const & p : dictionary){
+         auto extra_cfg = extraConfigs[p.first];
+         if (!extra_cfg.empty())
+            answer[p.first] = json::value::string(p.second + L", " + extra_cfg);
+         else
+            answer[p.first] = json::value::string(p.second);
+      }
    }
    dict_m.unlock();
 
    request.reply(status_codes::OK, answer);
 }
 
-int main(){
+int main(int argc, char* argv[]){
+
+   // check args
+   if(argc != 2){
+      std::cout << "Error: you must supply the JSON configuration file as the only argument." << std::endl;
+      return -1;
+   }
+
+   // check config file
+   std::string json_cfg_file = std::string(argv[1]);
+   if(!std::filesystem::exists(json_cfg_file)){
+      std::cout << "Error: the provided JSON configuration file does not exist." << std::endl;
+      return -1;
+   }
+
+   // read config file
+   utility::ifstream_t file_reader = utility::ifstream_t(json_cfg_file);
+   json_cfg = json::value::parse(file_reader);
+   file_reader.close();
+
+   // read the extra configs from the file
+   if(json_cfg.has_field(L"rigidbody_extra_config")){
+      auto rigidbody_extra_config = json_cfg.at(L"rigidbody_extra_config").as_object();
+      for (auto const & sub_json : rigidbody_extra_config){
+         utility::string_t key = sub_json.first;
+         utility::string_t val = sub_json.second.as_string();
+         extraConfigs[key] = val;
+      }
+   }
+   
    
    // set the frame callback handler
    natnetClient.SetFrameReceivedCallback(DataHandler);
 
    // connect to the server
+   std::string optitrack_server_address = WSTR2STR(json_cfg.at(L"optitrack_server_address").as_string());
    sNatNetClientConnectParams connectParams;
    connectParams.connectionType = ConnectionType::ConnectionType_Multicast;
-   connectParams.localAddress = LOCAL_IP_ADDRESS;
-   connectParams.serverAddress = OPTITRACK_SERVER_IP_ADDRESS;
+   connectParams.localAddress = "127.0.0.1";
+   connectParams.serverAddress = optitrack_server_address.c_str();
    int retCode = natnetClient.Connect(connectParams);
    if (retCode != ErrorCode_OK)
    {
@@ -68,7 +137,8 @@ int main(){
    }
 
    // start the REST listener
-   http_listener listener(REST_SERVER_URL);
+   auto rest_server_url = json_cfg.at(L"rest_server_url").as_string();
+   http_listener listener(rest_server_url);
    listener.support(methods::GET,  handle_get);
    try{
       listener

@@ -172,6 +172,6 @@ void data_request()
 
             }
         }
-        Sleep(tau_ms); // sleep for 100 ms
+        Sleep(tau_ms); // sleep for some ms
     }
 }

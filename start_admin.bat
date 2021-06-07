@@ -31,4 +31,5 @@ if '%errorlevel%' NEQ '0' (
 
 
 rem start it
-.\build\Debug\OptiTrackRestServer.exe
+.\build\Debug\OptiTrackRestServer.exe .\config.json
+pause

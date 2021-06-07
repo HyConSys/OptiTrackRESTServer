@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 project(OptiTrackRestServer VERSION 1.0)
 
 # specify the C++ standard
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # include vcpkg packages (change path if needed)
@@ -40,6 +40,10 @@ target_link_libraries(OptiTrackRestServer PRIVATE
     ws2_32
 )
 
+# suppress some warnings
+target_compile_definitions(OptiTrackRestServer PRIVATE 
+    _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+)
 
 # copy the NatNet dll
 file(COPY ${PROJECT_SOURCE_DIR}/lib/NatNetSDK/lib/x64/NatNetLib.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Debug/)
