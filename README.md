@@ -18,6 +18,6 @@ To install this application:
     cmake ..
     cmake -build
 
-6. When running the application, make sure it is being run as administrator.
+6. When running the application, make sure it is being run as administrator and pass the config file (or use the run BATCH file "start_admin.bat").
 
 
