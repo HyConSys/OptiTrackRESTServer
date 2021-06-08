@@ -29,6 +29,11 @@ if '%errorlevel%' NEQ '0' (
     CD /D "%~dp0"
 :-------------------------------------- 
 
+rem starting Motive
+START C:\"Program Files"\OptiTrack\Motive\Motive.exe
+
+rem sleeping for some time till it loads
+timeout /t 15
 
 rem start it
 .\build\Debug\OptiTrackRestServer.exe .\config.json

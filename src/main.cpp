@@ -51,7 +51,7 @@ void handle_get(http_request request){
       auto found_at = dictionary.find(filter_rb);
       if(found_at != dictionary.end()){
          auto extra_cfg = extraConfigs[filter_rb];
-         if (!extra_cfg.empty())
+         if (!extra_cfg.empty() && found_at->second != utility::string_t(L"untracked"))
             answer[filter_rb] = json::value::string(found_at->second + L", " + extra_cfg);
          else
             answer[filter_rb] = json::value::string(found_at->second);
@@ -64,7 +64,7 @@ void handle_get(http_request request){
    {
       for (auto const & p : dictionary){
          auto extra_cfg = extraConfigs[p.first];
-         if (!extra_cfg.empty())
+         if (!extra_cfg.empty()  && p.second != utility::string_t(L"untracked"))
             answer[p.first] = json::value::string(p.second + L", " + extra_cfg);
          else
             answer[p.first] = json::value::string(p.second);
