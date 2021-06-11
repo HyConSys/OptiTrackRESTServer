@@ -3,9 +3,9 @@
     "optitrack_server_address" : "127.0.0.1",
     "rigidbody_extra_config":{
         "DeepRacer1": "0.25, 0.35",
-        "Target1" : "1.0, 1.0",
-        "Target2" : "1.0, 1.0",
-        "Obstacle1" : "2.0, 0.6",
-        "Obstacle2" : "2.0, 0.6"
+        "Target1" : "1.5, 1.5",
+        "Target2" : "1.5, 1.5",
+        "Obstacle1" : "3.0, 0.6",
+        "Obstacle2" : "3.0, 0.6"
     }
 }
