@@ -18,6 +18,13 @@
 #include "resource.h"
 #include "RigidBodyCollection.h"
 #include "MarkerPositionCollection.h"
+#include "kalman_filter.h"
+#include "KalmanFilter.h"
+
+#ifdef _UTF16_STRINGS
+#else
+#define WSTR2STR(S) (S)
+#endif
 
 
 // boolean variable used in the thread
@@ -88,6 +95,22 @@ void data_request()
     float prev_x = 0.0f, prev_y = 0.0f, prev_t = 0.0f;
     float v =  0.0f;
     int tau_ms = 10;
+    float hold_x;
+    float hold_y;
+    float hold_angle;
+    float hold_v;
+    bool filter_on;
+
+    KalmanFilter x_filter(false);
+    KalmanFilter y_filter(false);
+    KalmanFilter angle_filter(false);
+    KalmanFilter v_filter(false);
+
+    string result = WSTR2STR(json_cfg.at(L"Enable_KalmanFilter").as_string());
+    if (result == "true")
+        filter_on = true;
+    else
+        filter_on = false;
 
     
     std::map<std::string, std::vector<float>> infoDict;
@@ -148,7 +171,6 @@ void data_request()
                     prev_y = infoDict[mapIDToName[pRB->ID]][2]; // same as prev_y = y
                 }
 
-
                 // add t, x, y to vector in this order
                 std::vector<float> infoVector;
                 infoVector.push_back(t);
@@ -162,10 +184,23 @@ void data_request()
                 else
                     v = ((float)sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2)))/time_diff;
 
+                if (filter_on){ // check if filter is to be used or not
+                    hold_x = x_filter.insertElement(x);
+                    hold_y = y_filter.insertElement(y);
+                    hold_angle = angle_filter.insertElement(angle.z);
+                    hold_v = v_filter.insertElement(v);
+                }
+                else{
+                    hold_x = x;
+                    hold_y = y;
+                    hold_angle = angles.z;
+                    hold_v = v;
+                }
+
 
                 dict_m.lock();                
                 if(rigidBodies.GetParams(i) == 1)
-                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(x) + L", " +  std::to_wstring(y) + L", " + std::to_wstring(angles.z) + L", " + std::to_wstring(v);
+                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(hold_x) + L", " +  std::to_wstring(hold_y) + L", " + std::to_wstring(hold_angle) + L", " + std::to_wstring(hold_v);
                 else
                     dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
