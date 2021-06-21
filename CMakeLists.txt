@@ -20,6 +20,7 @@ add_executable(OptiTrackRestServer
     "${PROJECT_SOURCE_DIR}/src/RigidBodyCollection.cpp"
     "${PROJECT_SOURCE_DIR}/src/NATUtils.cpp"
     "${PROJECT_SOURCE_DIR}/src/NatNetClient.cpp"
+    "${PROJECT_SOURCE_DIR}/src/KalmanFilter.cpp"
     "${PROJECT_SOURCE_DIR}/src/main.cpp"
 )
 
