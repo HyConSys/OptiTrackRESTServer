@@ -29,11 +29,18 @@ if '%errorlevel%' NEQ '0' (
     CD /D "%~dp0"
 :-------------------------------------- 
 
-rem starting Motive
+rem starting Motive if not running
+SETLOCAL EnableExtensions
+set EXE=Motive.exe
+FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq %EXE%"') DO IF %%x == %EXE% goto FOUND
+echo Starting Motive ...
 START C:\"Program Files"\OptiTrack\Motive\Motive.exe
-
-rem sleeping for some time till it loads
+echo Waiting for Motive to start ...
 timeout /t 15
+goto FIN
+:FOUND
+echo Motive found running and was not started.
+:FIN
 
 rem start it
 .\build\Debug\OptiTrackRestServer.exe .\config.json

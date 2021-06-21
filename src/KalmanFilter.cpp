@@ -8,27 +8,24 @@
  * Copyright (C) MICL,USTB
  */
 #include <stdio.h>
-#include "kalman_filter.h"
 #include "KalmanFilter.h"
 
-KalmanFilter::KalmanFilter(bool _useExtendedFilter)
-{
+KalmanFilter::KalmanFilter(bool _useExtendedFilter) {
     data_index = 0;
     useExtendedFilter = _useExtendedFilter;
 }
 
-void KalmanFilter::kalman1_init(kalman1_state *state, float init_x, float init_p)
-{
+void KalmanFilter::kalman1_init(kalman1_state *state, float init_x, float init_p) {
     state->x = init_x;
     state->p = init_p;
     state->A = 1;
     state->H = 1;
-    state->q = 10e-6;  /* predict noise convariance */
-    state->r = 10e-5;  /* measure error convariance */
+    state->q = 10e-6f;  /* predict noise convariance */
+    state->r = 10e-5f;  /* measure error convariance */
 }
 
-float KalmanFilter::kalman1_filter(kalman1_state *state, float z_measure)
-{
+float KalmanFilter::kalman1_filter(kalman1_state *state, float z_measure) {
+
     /* Predict */
     state->x = state->A * state->x;
     state->p = state->A * state->A * state->p + state->q;  /* p(n|n-1)=A^2*p(n-1|n-1)+q */
@@ -41,8 +38,8 @@ float KalmanFilter::kalman1_filter(kalman1_state *state, float z_measure)
     return state->x;
 }
 
-void KalmanFilter::kalman2_init(kalman2_state *state, float *init_x, float (*init_p)[2])
-{
+void KalmanFilter::kalman2_init(kalman2_state *state, float *init_x, float (*init_p)[2]) {
+
     state->x[0]    = init_x[0];
     state->x[1]    = init_x[1];
     state->p[0][0] = init_p[0][0];
@@ -50,21 +47,21 @@ void KalmanFilter::kalman2_init(kalman2_state *state, float *init_x, float (*ini
     state->p[1][0] = init_p[1][0];
     state->p[1][1] = init_p[1][1];
     //state->A       = {{1, 0.1}, {0, 1}};
-    state->A[0][0] = 1;
-    state->A[0][1] = 0.1;
-    state->A[1][0] = 0;
-    state->A[1][1] = 1;
+    state->A[0][0] = 1.0f;
+    state->A[0][1] = 0.1f;
+    state->A[1][0] = 0.0f;
+    state->A[1][1] = 1.0f;
     //state->H       = {1,0};
-    state->H[0]    = 1;
-    state->H[1]    = 0;
+    state->H[0]    = 1.0f;
+    state->H[1]    = 0.0f;
     //state->q       = {{10e-6,0}, {0,10e-6}};  /* measure noise convariance */
-    state->q[0]    = 10e-7;
-    state->q[1]    = 10e-7;
-    state->r       = 10e-7;  /* estimated error convariance */
+    state->q[0]    = 10e-7f;
+    state->q[1]    = 10e-7f;
+    state->r       = 10e-7f;  /* estimated error convariance */
 }
 
-float KalmanFilter::kalman2_filter(kalman2_state *state, float z_measure)
-{
+float KalmanFilter::kalman2_filter(kalman2_state *state, float z_measure) {
+
     float temp0 = 0.0f;
     float temp1 = 0.0f;
     float temp = 0.0f;
@@ -99,8 +96,8 @@ float KalmanFilter::kalman2_filter(kalman2_state *state, float z_measure)
     return state->x[0];
 }
 
-float KalmanFilter::insertElement(float dataPoint)
-{
+float KalmanFilter::insertElement(float dataPoint) {
+
     static float data0;
 
     if (data_index == 0)

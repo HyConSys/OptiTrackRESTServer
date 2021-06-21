@@ -35,6 +35,9 @@ std::mutex dict_m;
 std::map<utility::string_t, utility::string_t> dictionary;
 std::map<utility::string_t, utility::string_t> extraConfigs;
 
+// flag to enable/disable kalman filter on data
+bool filter_on;
+
 
 void handle_get(http_request request){
    auto answer = json::value::object();
@@ -104,8 +107,13 @@ int main(int argc, char* argv[]){
          extraConfigs[key] = val;
       }
    }
-   
-   
+
+   // enable/disable the kalman filter
+    if (WSTR2STR(json_cfg.at(L"enable_kalman_filter").as_string()) == "true")
+        filter_on = true;
+    else
+        filter_on = false;
+      
    // set the frame callback handler
    natnetClient.SetFrameReceivedCallback(DataHandler);
 

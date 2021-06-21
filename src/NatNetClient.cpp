@@ -18,7 +18,6 @@
 #include "resource.h"
 #include "RigidBodyCollection.h"
 #include "MarkerPositionCollection.h"
-#include "kalman_filter.h"
 #include "KalmanFilter.h"
 
 #ifdef _UTF16_STRINGS
@@ -42,6 +41,9 @@ std::map<int, std::string> mapIDToName;
 
 extern std::map<utility::string_t, utility::string_t> dictionary;
 extern std::mutex dict_m;
+
+// enable/dsiable kalman filter;
+extern bool filter_on;
 
 // x shift due to vehicle weights being off
 float x_shift = 0.0f;
@@ -99,19 +101,11 @@ void data_request()
     float hold_y;
     float hold_angle;
     float hold_v;
-    bool filter_on;
 
     KalmanFilter x_filter(false);
     KalmanFilter y_filter(false);
     KalmanFilter angle_filter(false);
     KalmanFilter v_filter(false);
-
-    string result = WSTR2STR(json_cfg.at(L"Enable_KalmanFilter").as_string());
-    if (result == "true")
-        filter_on = true;
-    else
-        filter_on = false;
-
     
     std::map<std::string, std::vector<float>> infoDict;
 
@@ -187,7 +181,7 @@ void data_request()
                 if (filter_on){ // check if filter is to be used or not
                     hold_x = x_filter.insertElement(x);
                     hold_y = y_filter.insertElement(y);
-                    hold_angle = angle_filter.insertElement(angle.z);
+                    hold_angle = angle_filter.insertElement(angles.z);
                     hold_v = v_filter.insertElement(v);
                 }
                 else{
