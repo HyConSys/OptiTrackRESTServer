@@ -5,7 +5,7 @@
         "DeepRacer1": "0.25, 0.35",
         "Target1" : "1.5, 1.5",
         "Target2" : "1.5, 1.5",
-        "Obstacle1" : "3.0, 0.6",
-        "Obstacle2" : "3.0, 0.6"
+        "Obstacle1" : "3.0, 0.3",
+        "Obstacle2" : "3.0, 0.3"
     }
 }
