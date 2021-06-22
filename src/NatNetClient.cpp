@@ -45,6 +45,9 @@ extern std::mutex dict_m;
 // enable/dsiable kalman filter;
 extern bool filter_on;
 
+// list of rigid bodies to filter
+extern std::vector<std::string> rigid_bodies_to_filter;
+
 // x shift due to vehicle weights being off
 float x_shift = 0.0f;
 
@@ -102,17 +105,22 @@ void data_request()
     float hold_angle;
     float hold_v;
 
-    KalmanFilter x_filter(false);
-    KalmanFilter y_filter(false);
-    KalmanFilter angle_filter(false);
-    KalmanFilter v_filter(false);
-    
     std::map<std::string, std::vector<float>> infoDict;
+
+    std::map<std::string, KalmanFilter> x_filter_dict;
+    std::map<std::string, KalmanFilter> y_filter_dict;
+    std::map<std::string, KalmanFilter> angle_filter_dict;
+    std::map<std::string, KalmanFilter> v_filter_dict;
+
+    // initialize dictionaries for kalman filter
+    x_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+    y_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+    angle_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+    v_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
 
     auto t_start = std::chrono::high_resolution_clock::now();
     while (!exit_request)
     {
-
         sDataDescriptions* pDataDefs = NULL;
         int result = natnetClient.GetDataDescriptionList(&pDataDefs);
         if (result != ErrorCode_OK || pDataDefs == NULL)
@@ -165,7 +173,6 @@ void data_request()
                     prev_y = infoDict[mapIDToName[pRB->ID]][2]; // same as prev_y = y
                 }
 
-                // add t, x, y to vector in this order
                 std::vector<float> infoVector;
                 infoVector.push_back(t);
                 infoVector.push_back(x);
@@ -178,11 +185,13 @@ void data_request()
                 else
                     v = ((float)sqrt(pow((x - prev_x), 2) + pow((y - prev_y), 2)))/time_diff;
 
-                if (filter_on){ // check if filter is to be used or not
-                    hold_x = x_filter.insertElement(x);
-                    hold_y = y_filter.insertElement(y);
-                    hold_angle = angle_filter.insertElement(angles.z);
-                    hold_v = v_filter.insertElement(v);
+                // checking if the current rigid body is one that we want to filter 
+                bool rb_found = (std::find(rigid_bodies_to_filter.begin(), rigid_bodies_to_filter.end(), mapIDToName[pRB->ID]) != rigid_bodies_to_filter.end());
+                if (filter_on && rb_found){ // check if filter is to be used or not
+                    x_filter_dict[mapIDToName[pRB->ID]].insertElement(x);
+                    y_filter_dict[mapIDToName[pRB->ID]].insertElement(y);
+                    angle_filter_dict[mapIDToName[pRB->ID]].insertElement(angles.z);
+                    v_filter_dict[mapIDToName[pRB->ID]].insertElement(v);
                 }
                 else{
                     hold_x = x;
@@ -191,14 +200,12 @@ void data_request()
                     hold_v = v;
                 }
 
-
                 dict_m.lock();                
                 if(rigidBodies.GetParams(i) == 1)
                     dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(hold_x) + L", " +  std::to_wstring(hold_y) + L", " + std::to_wstring(hold_angle) + L", " + std::to_wstring(hold_v);
                 else
                     dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
-
             }
         }
         Sleep(tau_ms); // sleep for some ms

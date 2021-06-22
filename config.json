@@ -2,6 +2,7 @@
     "rest_server_url": "http://*:12345/OptiTrackRestServer",
     "optitrack_server_address" : "127.0.0.1",
     "enable_kalman_filter" : "false",
+    "rigid_bodies_for_kalman_filter": "DeepRacer1",
     "rigidbody_extra_config":{
         "DeepRacer1": "0.25, 0.35",
         "Target1" : "1.5, 1.5",

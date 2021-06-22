@@ -38,6 +38,9 @@ std::map<utility::string_t, utility::string_t> extraConfigs;
 // flag to enable/disable kalman filter on data
 bool filter_on;
 
+// list of rigid bodies to filter
+std::vector<std::string> rigid_bodies_to_filter;
+
 
 void handle_get(http_request request){
    auto answer = json::value::object();
@@ -113,6 +116,16 @@ int main(int argc, char* argv[]){
         filter_on = true;
     else
         filter_on = false;
+
+   // find which rigid bodies we want to use the kalman filter on
+   string rigid_bodies_list = WSTR2STR(json_cfg.at(L"rigid_bodies_for_kalman_filter").as_string())
+   if (rigid_bodies_list != ""){
+      while(rigid_bodies_list.good()){
+         string split_string;
+         getline(rigid_bodies_list, split_string, ',');
+         rigid_bodies_to_filter.push_back(split_string);
+      }
+   }   
       
    // set the frame callback handler
    natnetClient.SetFrameReceivedCallback(DataHandler);
