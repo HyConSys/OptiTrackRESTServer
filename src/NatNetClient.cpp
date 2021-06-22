@@ -113,10 +113,12 @@ void data_request()
     std::map<std::string, KalmanFilter> v_filter_dict;
 
     // initialize dictionaries for kalman filter
-    x_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
-    y_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
-    angle_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
-    v_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+    for (int i = 0; i < rigid_bodies_to_filter.size(); i++) {
+        x_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+        y_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+        angle_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+        v_filter_dict[rigid_bodies_to_filter[i]] = KalmanFilter(false);
+    }
 
     auto t_start = std::chrono::high_resolution_clock::now();
     while (!exit_request)
