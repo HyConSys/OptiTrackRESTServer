@@ -190,10 +190,10 @@ void data_request()
                 // checking if the current rigid body is one that we want to filter 
                 bool rb_found = (std::find(rigid_bodies_to_filter.begin(), rigid_bodies_to_filter.end(), mapIDToName[pRB->ID]) != rigid_bodies_to_filter.end());
                 if (filter_on && rb_found){ // check if filter is to be used or not
-                    x_filter_dict[mapIDToName[pRB->ID]].insertElement(x);
-                    y_filter_dict[mapIDToName[pRB->ID]].insertElement(y);
-                    angle_filter_dict[mapIDToName[pRB->ID]].insertElement(angles.z);
-                    v_filter_dict[mapIDToName[pRB->ID]].insertElement(v);
+                    hold_x = x_filter_dict[mapIDToName[pRB->ID]].insertElement(x);
+                    hold_y = y_filter_dict[mapIDToName[pRB->ID]].insertElement(y);
+                    hold_angle = angle_filter_dict[mapIDToName[pRB->ID]].insertElement(angles.z);
+                    hold_v = v_filter_dict[mapIDToName[pRB->ID]].insertElement(v);
                 }
                 else{
                     hold_x = x;

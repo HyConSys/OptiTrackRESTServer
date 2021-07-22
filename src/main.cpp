@@ -118,11 +118,13 @@ int main(int argc, char* argv[]){
         filter_on = false;
 
    // find which rigid bodies we want to use the kalman filter on
-   string rigid_bodies_list = WSTR2STR(json_cfg.at(L"rigid_bodies_for_kalman_filter").as_string())
-   if (rigid_bodies_list != ""){
-      while(rigid_bodies_list.good()){
+   string rigid_bodies_list = WSTR2STR(json_cfg.at(L"rigid_bodies_for_kalman_filter").as_string());
+   if (!rigid_bodies_list.empty()){
+      stringstream ss_rigid_bodies_list;
+      ss_rigid_bodies_list << rigid_bodies_list;
+      while(ss_rigid_bodies_list.good()){
          string split_string;
-         getline(rigid_bodies_list, split_string, ',');
+         getline(ss_rigid_bodies_list, split_string, ',');
          rigid_bodies_to_filter.push_back(split_string);
       }
    }   

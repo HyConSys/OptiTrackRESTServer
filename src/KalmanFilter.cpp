@@ -10,6 +10,12 @@
 #include <stdio.h>
 #include "KalmanFilter.h"
 
+
+KalmanFilter::KalmanFilter() {
+    data_index = 0;
+    useExtendedFilter = false;
+}
+
 KalmanFilter::KalmanFilter(bool _useExtendedFilter) {
     data_index = 0;
     useExtendedFilter = _useExtendedFilter;

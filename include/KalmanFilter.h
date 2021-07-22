@@ -26,6 +26,7 @@ typedef struct {
 /* class: KalmanFilter*/
 class KalmanFilter {
 public:
+    KalmanFilter();
     KalmanFilter(bool _useExtendedFilter);
     float insertElement(float dataPoint);
 private:
