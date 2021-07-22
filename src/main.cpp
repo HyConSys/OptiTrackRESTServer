@@ -90,7 +90,7 @@ void handle_get(http_request request){
 }
 void handle_put(http_request request){
    auto answer = json::value::object();
-   auto jvalue = request.extract_json()
+   auto jvalue = request.extract_json().get();
    if (!jvalue.is_null()){
       for (auto const & e : jvalue.as_object()){
          if (e.second.is_string()){
