@@ -32,8 +32,13 @@ json::value json_cfg;
 
 // dictionaries of rigid bodys and a lock to handle sync
 std::mutex dict_m;
-std::map<utility::string_t, utility::string_t> dictionary;
-std::map<utility::string_t, utility::string_t> extraConfigs;
+std::map<utility::string_t, utility::string_t> dict_optitrack;    // Controllerd by OptiTrack Objects
+std::map<utility::string_t, utility::string_t> dict_extras;       // Adds extras to dict_optitrack
+std::map<utility::string_t, utility::string_t> dict_user;         // Treated as separate items 
+                                                                  // and managed remotely by the 
+                                                                  // user via PUT/DEL. It overrides 
+                                                                  // the values above when keys are
+                                                                  // the same
 
 // flag to enable/disable kalman filter on data
 bool filter_on;
@@ -54,9 +59,9 @@ void handle_get(http_request request){
 
    dict_m.lock();
    if (!query.empty() && !filter_rb.empty()){
-      auto found_at = dictionary.find(filter_rb);
-      if(found_at != dictionary.end()){
-         auto extra_cfg = extraConfigs[filter_rb];
+      auto found_at = dict_optitrack.find(filter_rb);
+      if(found_at != dict_optitrack.end()){
+         auto extra_cfg = dict_extras[filter_rb];
          if (!extra_cfg.empty() && found_at->second != utility::string_t(L"untracked"))
             answer[filter_rb] = json::value::string(found_at->second + L", " + extra_cfg);
          else
@@ -68,17 +73,46 @@ void handle_get(http_request request){
    }
    else
    {
-      for (auto const & p : dictionary){
-         auto extra_cfg = extraConfigs[p.first];
+      for (auto const & p : dict_optitrack){
+         auto extra_cfg = dict_extras[p.first];
          if (!extra_cfg.empty()  && p.second != utility::string_t(L"untracked"))
             answer[p.first] = json::value::string(p.second + L", " + extra_cfg);
          else
             answer[p.first] = json::value::string(p.second);
       }
    }
+   for (auto const & p : dict_user){
+      answer[p.first] = json::value::string(p.second);
+   }
    dict_m.unlock();
 
    request.reply(status_codes::OK, answer);
+}
+void handle_put(http_request request){
+   auto answer = json::value::object();
+   auto jvalue = request.extract_json()
+   if (!jvalue.is_null()){
+      for (auto const & e : jvalue.as_object()){
+         if (e.second.is_string()){
+            auto key = e.first;
+            auto value = e.second.as_string();
+            
+            dict_m.lock();
+
+            if (dict_user.find(key) == dict_user.end())
+               answer[key] = json::value::string(L"<put>");
+            else
+               answer[key] = json::value::string(L"<updated>");
+            dict_user[key] = value;
+
+            dict_m.unlock();
+         }
+      }
+   }
+   request.reply(status_codes::OK, answer);
+
+}
+void handle_del(http_request request){
 }
 
 int main(int argc, char* argv[]){
@@ -107,7 +141,7 @@ int main(int argc, char* argv[]){
       for (auto const & sub_json : rigidbody_extra_config){
          utility::string_t key = sub_json.first;
          utility::string_t val = sub_json.second.as_string();
-         extraConfigs[key] = val;
+         dict_extras[key] = val;
       }
    }
 
@@ -163,6 +197,8 @@ int main(int argc, char* argv[]){
    auto rest_server_url = json_cfg.at(L"rest_server_url").as_string();
    http_listener listener(rest_server_url);
    listener.support(methods::GET,  handle_get);
+   listener.support(methods::PUT,  handle_put);
+   listener.support(methods::DEL,  handle_del);
    try{
       listener
          .open()
