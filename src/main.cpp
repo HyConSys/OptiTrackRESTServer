@@ -92,27 +92,47 @@ void handle_put(http_request request){
    auto answer = json::value::object();
    auto jvalue = request.extract_json().get();
    if (!jvalue.is_null()){
+      dict_m.lock();
       for (auto const & e : jvalue.as_object()){
          if (e.second.is_string()){
             auto key = e.first;
             auto value = e.second.as_string();
-            
-            dict_m.lock();
-
+         
             if (dict_user.find(key) == dict_user.end())
                answer[key] = json::value::string(L"<put>");
             else
                answer[key] = json::value::string(L"<updated>");
+               
             dict_user[key] = value;
-
-            dict_m.unlock();
          }
       }
+      dict_m.unlock();
    }
    request.reply(status_codes::OK, answer);
-
 }
 void handle_del(http_request request){
+   auto answer = json::value::object();
+   auto jvalue = request.extract_json().get();
+   if (!jvalue.is_null()){
+      set<utility::string_t> toDel_keys;
+      dict_m.lock();
+      for (auto const & e : jvalue.as_array()){
+         if (e.is_string()){
+            auto key = e.as_string();
+            auto pos = dict_user.find(key);
+            if (pos == dict_user.end())
+               answer[key] = json::value::string(L"<not_found>");
+            else{
+               answer[key] = json::value::string(L"<deleted>");
+               toDel_keys.insert(key);
+            }
+         }
+      }
+      for (auto const & key : toDel_keys)
+         dict_user.erase(key);
+      dict_m.unlock();
+   }
+   request.reply(status_codes::OK, answer);
 }
 
 int main(int argc, char* argv[]){
