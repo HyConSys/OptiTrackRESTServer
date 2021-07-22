@@ -39,7 +39,7 @@ RigidBodyCollection rigidBodies;
 
 std::map<int, std::string> mapIDToName;
 
-extern std::map<utility::string_t, utility::string_t> dictionary;
+extern std::map<utility::string_t, utility::string_t> dict_optitrack;
 extern std::mutex dict_m;
 
 // enable/dsiable kalman filter;
@@ -204,9 +204,9 @@ void data_request()
 
                 dict_m.lock();                
                 if(rigidBodies.GetParams(i) == 1)
-                    dictionary[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(hold_x) + L", " +  std::to_wstring(hold_y) + L", " + std::to_wstring(hold_angle) + L", " + std::to_wstring(hold_v);
+                    dict_optitrack[StringToWString(mapIDToName[pRB->ID])] = std::to_wstring(t) + L", " + std::to_wstring(hold_x) + L", " +  std::to_wstring(hold_y) + L", " + std::to_wstring(hold_angle) + L", " + std::to_wstring(hold_v);
                 else
-                    dictionary[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
+                    dict_optitrack[StringToWString(mapIDToName[pRB->ID])] = L"untracked";
                 dict_m.unlock();
             }
         }
